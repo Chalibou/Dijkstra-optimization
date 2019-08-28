@@ -12,7 +12,7 @@
 
 using namespace std;
 
-//Debug and usefull fonctions
+//### DEBUG fonctions
 void printIntArray(int array[], int size, string name){
 	std::printf("## Print of array %s \n ------------- \n", name.c_str()); 
 	for (int i = 0; i < size; i++){
@@ -28,6 +28,8 @@ void printStringArray(string array[], int size, string name){
 };
 
 
+//### PRETTFY Functions
+
 // Record start time
 auto start = std::chrono::high_resolution_clock::now();
 
@@ -42,23 +44,9 @@ string convertToLetter(int number){
 	return response;
 }
 
-
-// A utility function to find the vertex with minimum distance value, from 
-// the set of vertices not yet included in shortest path tree 
-int minDistance(int dist[], bool sptSet[],int size) 
-{ 
-	// Initialize min value 
-	int min = INT_MAX, min_index; 
-
-	for (int v = 0; v < size; v++) 
-		if (sptSet[v] == false && dist[v] <= min) 
-			min = dist[v], min_index = v; 
-
-	return min_index; 
-} 
-
 //build back entire path to "source" thanks to the "origin" array obtained from Dijkstra
-void buildPath(int origin[],string path[],int source,int size){
+//This function replace numbers by Letters for comprehension
+void buildPathLetter(int origin[],string path[],int source,int size){
 		
 	//"Goal" is the objective letter of the pathfinding 
 	string goal = "-"+convertToLetter(source);
@@ -76,19 +64,62 @@ void buildPath(int origin[],string path[],int source,int size){
 		path[i]=completePath + "]";
 	}
 }
-	
 
 // A utility function to print the constructed distance array 
-void printSolution(int dist[],int origin[],string path[],int src, int size){ 
+void printSolutionLetter(int dist[],int origin[],string path[],int src, int size){ 
 	std::printf("Vertex Distance from Source : %s \n",convertToLetter(src).c_str()); 
 	for (int i = 0; i < size; i++){
 		std::printf("%s longueur : %d, chemin : %s\n", convertToLetter(i).c_str(), dist[i], path[i].c_str()); 
 	}
 } 
 
+// A utility function to print the constructed distance array 
+void printSolution(int dist[],int origin[],string path[],int src, int size){ 
+	std::printf("Vertex Distance from Source : %d \n",src); 
+	for (int i = 0; i < size; i++){
+		std::printf("%d longueur : %d, chemin : %s\n", i, dist[i], path[i].c_str()); 
+	}
+} 
+
+
+//### CORE Functions
+
+void buildPath(int origin[],string path[],int source,int size){
+		
+	//"Goal" is the objective letter of the pathfinding 
+	string goal = "-"+convertToLetter(source);
+
+	for (int i=0;i<size;i++){
+		//"Origin" array may have 2 types of values : -1 == no path found | >=0 == you have to pass through another node before reaching "source", this info is in "origin"
+		string completePath="";
+		completePath += to_string(i);
+		int d = origin[i];
+		if(d == -1){path[i]="NO PATH";continue;} //No path found
+		while(d >= 0){ //"Origin" gives the next node to reach, you go on until you arive at 0
+			completePath += "-"+to_string(d);
+			d = origin[d];
+		}
+		path[i]=completePath;
+	}
+}
+
+// A utility function to find the vertex with minimum distance value, from 
+// the set of vertices not yet included in shortest path tree 
+int minDistance(int dist[], bool sptSet[],int size) 
+{ 
+	// Initialize min value 
+	int min = INT_MAX, min_index; 
+
+	for (int v = 0; v < size; v++) 
+		if (sptSet[v] == false && dist[v] <= min) 
+			min = dist[v], min_index = v; 
+
+	return min_index; 
+} 
+
 // Function that implements Dijkstra's single source shortest path algorithm 
 // for a graph represented using adjacency matrix representation 
-void dijkstra(int **graph, int src,int size) 
+void dijkstra(int **graph, int src, int dir, int size) 
 { 
 	int *dist = new int[size]; // An output array. dist[i] will hold the shortest 
 	// distance from src to i 
@@ -134,13 +165,13 @@ void dijkstra(int **graph, int src,int size)
 			} 
 		} 	
 	}
-
 	//build back entire path to 0
 	buildPath(origin,path,src,size);
-	
-	// print the constructed distance array 
-	printSolution(dist,origin,path,src,size); 
+	std::printf("Shortest path from %d to %d :\n",src,dir); 
+	std::printf("Chemin : %s\nLongueur : %d, \n",path[dir].c_str(),dist[dir]); 
 
+	// print the constructed distance array 
+	//printSolution(dist,origin,path,src,size); 
 } 
 
 //Generate a random map given node count and link per node count, links are generated randomly such as weight for each node
@@ -177,10 +208,16 @@ int** genMap(int size, int linkQty, int maxWeight){
 		}
 		count=0;
 	}
-/* 
+ /*
 	//Print matrix for debugging
 	std::printf("Generated symetrical 2d array\n"); 
+	std::printf("\t");
 	for (int i = 0; i < size; i++){
+		std::printf("[%d]\t", i); 
+	}
+	std::printf("\n");
+	for (int i = 0; i < size; i++){
+		std::printf("[%d]\t", i); 
 		for (int j = 0; j < size; j++){
 			std::printf("%d\t", result[i][j]); 
 		}
@@ -190,18 +227,19 @@ int** genMap(int size, int linkQty, int maxWeight){
 	return result;
 }
 
-// driver program to test above function 
+//### MAIN Program
 int main() 
 { 
-	int SIZE=10;
-	int LINK_COUNT=5;
-	int MAX_WEIGHT=15;
+	int SIZE=1000;//Size of the matrix
+	int LINK_COUNT=6;//Set the max non-zero value on the matrix
+	int MAX_WEIGHT=15;//Set the maximum value of the weight
+	int START = 2;//Set the starting point
+	int END = 524;//Set the end point
+
 	//Generate a symetrical array with dynamic size and specific distribution as shown in the example below :
 	int** genGraph = genMap(SIZE,LINK_COUNT,MAX_WEIGHT);
-	int START = 8;
-
 	/* 
-	//Let us create the example graph discussed above 
+	//Create the graph manually
 	int graph[V][V] = { 
             { 0, 4, 0, 0, 0, 0, 0, 8, 0 }, 
 			{ 4, 0, 8, 0, 0, 0, 0, 11, 0 }, 
@@ -213,13 +251,13 @@ int main()
 			{ 8, 11, 0, 0, 0, 0, 1, 0, 7 }, 
 			{ 0, 0, 2, 0, 0, 0, 6, 7, 0 } }; 
 	*/
-
-	dijkstra(genGraph, START, SIZE); 
+	
+	dijkstra(genGraph, START,END, SIZE); 
 
 	//Record finish time and get the elapsed time in seconds
-  auto finish = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed = finish - start;
-  std::printf("Time of execution :  %f seconds", elapsed.count());
+	auto finish = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed = finish - start;
+	std::printf("Time of execution :  %f seconds", elapsed.count());
 
   return 0; 
 } 
